@@ -1,0 +1,183 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator typegraphql {
+  provider = "typegraphql-prisma"
+}
+
+model building {
+  id             String    @id @default(cuid())
+  //Model Fields
+  name           String
+  addressStreet1 String
+  addressStreet2 String?
+  addressCity    String
+  addressState   String
+  addressZip     String
+  //Relations
+  companyId      String
+  company        company   @relation(fields: [companyId], references: [id])
+  tickets        ticket[]
+  //Meta
+  version        Int
+  createdDate    DateTime  @default(now()) @db.Timestamptz(6)
+  createdById    String
+  updatedDate    DateTime? @updatedAt @db.Timestamptz(6)
+  updatedById    String?
+  deletedDate    DateTime? @db.Timestamptz(6)
+  deletedById    String?
+  //TABLE MODIFIERS
+
+  @@unique([addressStreet1, addressStreet2, addressCity, addressState, addressZip], name: "Unique_Addresses")
+}
+
+model company {
+  id          String              @id @default(cuid())
+  //Model Fields
+  name        String
+  //Relations
+  buildings   building[]
+  employees   employee_profiles[]
+  //Meta
+  version     Int
+  createdDate DateTime            @default(now()) @db.Timestamptz(6)
+  createdById String
+  updatedDate DateTime?           @updatedAt @db.Timestamptz(6)
+  updatedById String?
+  deletedDate DateTime?           @db.Timestamptz(6)
+  deletedById String?
+  //TABLE MODIFIERS
+}
+
+model ticket {
+  id          String           @id @default(cuid())
+  //Model Fields
+  name        String
+  description String
+  stage       TicketStage      @default(CREATED)
+  //Relations
+  buildingId  String
+  building    building         @relation(fields: [buildingId], references: [id])
+  activityLog ticketActivity[]
+  //Meta
+  version     Int
+  createdDate DateTime         @default(now()) @db.Timestamptz(6)
+  createdById String
+  updatedDate DateTime?        @updatedAt @db.Timestamptz(6)
+  updatedById String?
+  deletedDate DateTime?        @db.Timestamptz(6)
+  deletedById String?
+  //TABLE MODIFIERS
+}
+
+enum TicketStage {
+  CREATED
+  RECEIVED
+  SCHEDULED
+  COMPLETED
+  CLOSED
+}
+
+model ticketActivity {
+  id          String             @id @default(cuid())
+  //Model Fields
+  type        TicketActivityType @default(NOTE)
+  content     String
+  //Relations
+  ticketId    String
+  ticket      ticket             @relation(fields: [ticketId], references: [id])
+  //Meta
+  createdDate DateTime           @default(now()) @db.Timestamptz(6)
+  createdById String
+}
+
+enum TicketActivityType {
+  STAGE_UPDATE
+  NOTE
+}
+
+model user {
+  id               String              @id @default(cuid())
+  //Model Fields
+  nameFirst        String
+  nameLast         String
+  phoneCell        String?
+  isAdmin          Boolean             @default(false)
+  //Relations
+  userLogin        user_login?
+  employeeProfiles employee_profiles[]
+  //Meta
+  version          Int
+  createdDate      DateTime            @default(now()) @db.Timestamptz(6)
+  createdById      String
+  updatedDate      DateTime?           @updatedAt @db.Timestamptz(6)
+  updatedById      String?
+  deletedDate      DateTime?           @db.Timestamptz(6)
+  deletedById      String?
+  //TABLE MODIFIERS
+}
+
+model employee_profiles {
+  id             String    @id @default(cuid())
+  //Model Fields
+  job_title      String
+  emailCompany   String    @unique
+  phoneCompany   String?
+  defaultProfile Boolean   @default(false)
+  //Relations
+  userId         String
+  user           user      @relation(fields: [userId], references: [id])
+  companyId      String
+  company        company   @relation(fields: [companyId], references: [id])
+  //Meta
+  version        Int
+  createdDate    DateTime  @default(now()) @db.Timestamptz(6)
+  createdById    String
+  updatedDate    DateTime? @updatedAt @db.Timestamptz(6)
+  updatedById    String?
+  deletedDate    DateTime? @db.Timestamptz(6)
+  deletedById    String?
+  //TABLE MODIFIERS
+
+  @@unique([userId, companyId], name: "One_User_Per_Company")
+  @@map("linkTable_user_company")
+}
+
+model user_login {
+  userId           String   @id
+  user             user     @relation(fields: [userId], references: [id])
+  emailPersonal    String   @unique
+  username         String   @unique
+  password         String
+  isEmailConfirmed Boolean  @default(false)
+  isLocked         Boolean  @default(false)
+  //Meta
+  createdDate      DateTime @default(now()) @db.Timestamptz(6)
+  createdById      String
+}
+
+// model category {
+//   id             String     @id @default(cuid())
+//   name           String
+//   parentId       String?
+//   category       category?  @relation("categoryTocategory_parentId", fields: [parentId], references: [id])
+//   other_category category[] @relation("categoryTocategory_parentId")
+// }
+
+//Meta
+// version        Int
+// createdDate    DateTime  @default(now()) @db.Timestamptz(6)
+// createdById    String
+// createdBy      user      @relation(name: "createdBy", fields: [createdById], references: [id])
+// updatedDate    DateTime? @updatedAt @db.Timestamptz(6)
+// updatedById    String?
+// updatedBy      user?     @relation(name: "updatedBy", fields: [updatedById], references: [id])
+// deletedDate    DateTime? @db.Timestamptz(6)
+// deletedById    String?
+// deletedBy      user?     @relation(name: "deletedBy", fields: [deletedById], references: [id])
